@@ -66,4 +66,4 @@ function sendRequestToCdb($headers, $host, $data)
 //echo $content;
 //echo $http_code . ' ';
 
-echo sendRequestToCdb($headers, $host, $data);
+//echo sendRequestToCdb($headers, $host, $data);
