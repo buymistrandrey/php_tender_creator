@@ -34,4 +34,4 @@ $above_threshold_active_bid_procurements = ['aboveThresholdUA', 'aboveThresholdU
 //list_of_api_versions = ['2.4', 'dev']
 //
 //# Get local timezone
-//kiev_now = str(datetime.now(pytz.timezone('Europe/Kiev')))[26:]
+$date_now = new DateTime("now", new DateTimeZone('Europe/Kiev') );
