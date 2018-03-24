@@ -1,20 +1,46 @@
 <?php
 include 'tender_additional_data.php';
+require_once '../plugins/faker/autoload.php';
+
+$faker = Faker\Factory::create('uk_UA');
+
+function getClassification(){
+    global $classifications;
+    $classification = $classifications[rand(0, count($classifications) - 1)];
+    return $classification;
+};
+
+function getUnit(){
+    $unit = [['BX', 'ящик'], ['D64', 'блок'], ['E48', 'послуга']];
+    return $unit[array_rand($unit, 1)];
+};
+
+function generateIdForItem(){
+    return bin2hex(openssl_random_pseudo_bytes(16));
+};
+
+
+function generateIdForLot($number_of_lots){
+    $list_of_id = [];
+    foreach (range(0, count($list_of_id)) as $lot)
+        array_push($list_of_id, bin2hex(openssl_random_pseudo_bytes(16)));
+    return $list_of_id;
+};
 
 
 function tenderPeriod($accelerator, $procurement_method, $received_tender_status){
-    global $date_now;
+    timeNow();
     # tender_start_date
-    $tender_start_date = $date_now->format('Y-m-d\TH:i:sO');
+    $tender_start_date = timeNow()->format('Y-m-d\TH:i:sO');
     # tender_end_date
-    $date_day = $date_now->add(new DateInterval('PT' . round(ceil(31 * (1440.0 / $accelerator)), 1) . 'M'));
+    $date_day = timeNow()->add(new DateInterval('PT' . round(ceil(31 * (1440.0 / $accelerator)), 1) . 'M'));
     $tender_end_date = $date_day->format('Y-m-d\TH:i:sO');
     $tender_period_data = array("tenderPeriod"=>array("startDate"=>$tender_start_date, "endDate"=>$tender_end_date));
 
     if ($procurement_method == 'belowThreshold'){
-        $one_day = $date_now->add(new DateInterval('PT' . round(ceil(1 * (1440.0 / $accelerator)), 1) . 'M'));
-        $ten_days = $date_now->add(new DateInterval('PT' . round(ceil(10 * (1440.0 / $accelerator)), 1) . 'M'));
-        $five_dozens_days = $date_now->add(new DateInterval('PT' . round(ceil(60 * (1440.0 / $accelerator)), 1) . 'M'));
+        $one_day = timeNow()->add(new DateInterval('PT' . round(ceil(1 * (1440.0 / $accelerator)), 1) . 'M'));
+        $ten_days = timeNow()->add(new DateInterval('PT' . round(ceil(10 * (1440.0 / $accelerator)), 1) . 'M'));
+        $five_dozens_days = timeNow()->add(new DateInterval('PT' . round(ceil(60 * (1440.0 / $accelerator)), 1) . 'M'));
         $tender_start_date = $one_day->format('Y-m-d\TH:i:sO');
         $tender_end_date = $five_dozens_days->format('Y-m-d\TH:i:sO');
 
@@ -26,10 +52,11 @@ function tenderPeriod($accelerator, $procurement_method, $received_tender_status
                                             "startDate"=>$tender_start_date,
                                             "endDate"=>$tender_end_date),
                                     "enquiryPeriod"=>array(
-                                            "startDate"=>$date_now->format('Y-m-d\TH:i:sO'),
+                                            "startDate"=>timeNow()->format('Y-m-d\TH:i:sO'),
                                             "endDate"=>$tender_start_date));
 
-    };
+    }
+
 
     return $tender_period_data;
 };
@@ -97,6 +124,28 @@ function generateValues($procurement_method, $number_of_lots){
     return $value;
 };
 
+function generateLots($lots_id, $values){
+    global $faker;
+    $lots = [];
+    $lot_number = 0;
+    foreach (range(0, count($lots_id)) as $lot) {
+        $lot_number += 1;
+        $lots_data = array(
+                        "status"=>"active",
+                        "description"=>"Описание лота Лот {} {}" . $lot_number . str_replace('\n', ' ', $faker->text(200)),
+                        "title"=>"Лот " . $lot_number,
+                        "title_en"=>"Title of lot in English",
+                        "description_en"=>"Description of lot in English",
+                        "id"=>$lots_id[$lot]
+        );
+        foreach($values as $key => $value){
+            $lots_data[$key] = $values[$key];
+            array_push($lots, $lots_data);
+        }
+    }
+
+    return $lots;
+};
 
 function generateTenderJson($procurement_method, $number_of_lots, $number_of_items, $accelerator, $received_tender_status, $list_of_lots_id, $if_features, $skip_auction)
 {
@@ -146,7 +195,7 @@ function generateTenderJson($procurement_method, $number_of_lots, $number_of_ite
 
 
     //Select submission method details if isn't in limited procurement
-    if (in_array($procurement_method, $limited_procurement, false)){
+    if (!in_array($procurement_method, $limited_procurement)){
         if ($skip_auction == True){
             if ($procurement_method == 'esco'){
                 $submission_method_details = 'quick(mode:no-auction)';
@@ -175,15 +224,15 @@ function generateTenderJson($procurement_method, $number_of_lots, $number_of_ite
     }
 
     //Add tender periods
-    if (in_array($procurement_method, $limited_procurement, false)){
+    if (!in_array($procurement_method, $limited_procurement)){
         $tender_periods = tenderPeriod($accelerator, $procurement_method, $received_tender_status);
         foreach($tender_periods as $key => $value){
-            $tender_data['data'][$key] = $tender_periods;
+            $tender_data['data'][$key] = $tender_periods[$key];
         }
         }
 
     return json_encode($tender_data);
 };
 
-echo generateTenderJson('above', 2, 3, 1440,
-'STATUS', [1, 2], 1, true);
+echo generateTenderJson('belowThreshol', 2, 3, 1440,
+'active.qualification', [1, 2], 1, true);

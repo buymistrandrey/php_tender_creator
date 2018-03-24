@@ -34,4 +34,8 @@ $above_threshold_active_bid_procurements = ['aboveThresholdUA', 'aboveThresholdU
 //list_of_api_versions = ['2.4', 'dev']
 //
 //# Get local timezone
-$date_now = new DateTime("now", new DateTimeZone('Europe/Kiev') );
+function timeNow()
+{
+    $date_now = new DateTime("now", new DateTimeZone('Europe/Kiev'));
+    return $date_now;
+}
