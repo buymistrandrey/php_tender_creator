@@ -248,7 +248,8 @@ function generateLots($lots_id, $values){
     return $lots;
 };
 
-function generateTenderJson($procurement_method, $number_of_lots, $number_of_items, $accelerator, $received_tender_status, $list_of_lots_id, $if_features, $skip_auction)
+function generateTenderJson($procurement_method, $number_of_lots, $number_of_items, $accelerator, $received_tender_status,
+    $list_of_lots_id, $if_features, $skip_auction)
 {
     global $limited_procurement;
     global $negotiation_procurement;
@@ -299,7 +300,7 @@ function generateTenderJson($procurement_method, $number_of_lots, $number_of_ite
 
     //Select submission method details if isn't in limited procurement
     if (!in_array($procurement_method, $limited_procurement)){
-        if ($skip_auction == True){
+        if ($skip_auction == true){
             if ($procurement_method == 'esco'){
                 $submission_method_details = 'quick(mode:no-auction)';
             }
@@ -364,8 +365,3 @@ function generateTenderJson($procurement_method, $number_of_lots, $number_of_ite
 
     return json_encode($tender_data);
 };
-
-$number_of_lots = 2;
-$list_of_lots_id = generateIdForLot($number_of_lots);
-echo generateTenderJson('reportin', $number_of_lots, 3, 1440,
-'active.qualification', $list_of_lots_id, 1, true);
