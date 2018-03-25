@@ -63,6 +63,68 @@ function tenderPeriod($accelerator, $procurement_method, $received_tender_status
 };
 
 
+function generateFeatures($tender_data){
+    global  $faker;
+    if (in_array('lots', $tender_data['data'])) {
+        $number_of_lots = count($tender_data['data']['lots']);
+    }
+    else {
+        $number_of_lots = 0;
+            };
+
+    $features = array(array(
+                "code"=>generateIdForItem(),
+                "description"=>"Описание неценового критерия для тендера",
+                "title"=>"Неценовой критерий для тендера",
+                "enum"=>array([]),
+                "title_en"=>"Feature of tender",
+                "description_en"=>"Description of feature for tender",
+                "featureOf"=>"tenderer"
+));
+    $feature_number = -1;
+    foreach (range(0, 5) as $feature){
+        $feature_number += 1;
+        $feature = array(
+                        "title_en"=>"Feature option " . ($feature_number + 1),
+                        "value"=>(float)('0.0' . $feature_number),
+                        "title"=>"Опция " . ($feature_number + 1) . ' ' . str_replace('\n', ' ', $faker->text(20))
+        );
+        array_push($features[0]['enum'], $feature );
+    };
+
+    if ($number_of_lots == 0) {
+        $features = $features;
+            }
+    else{
+        foreach (range(0, $number_of_lots - 1) as $lot){
+            $lot_feature = array(
+                            "code"=>generateIdForItem(),
+                            "description"=>"Описание неценового критерия Лот " . ($lot + 1),
+                            "title"=>"Неценовой критерий Лот ". ($lot + 1),
+                            "enum"=>[],
+                            "title_en"=>"Title of feature for lot " . ($lot + 1),
+                            "description_en"=>"Description of feature for lot " . ($lot + 1),
+                            "relatedItem"=>$tender_data['data']['lots'][$lot]['id'],
+                            "featureOf"=>"lot"
+            );
+            $feature_number = -1;
+            foreach (range(0, 5) as $feature){
+                $feature_number += 1;
+                $feature = array(
+                    "title_en"=>"Feature option " . ($feature_number + 1),
+                    "value"=>(float)('0.0' . $feature_number),
+                    "title"=>"Опция " . ($feature_number + 1) . " Лот " . ($lot + 1) . " " . str_replace('\n', ' ', $faker->text(20))
+                );
+                array_push($lot_feature['enum'],$feature);
+            };
+            array_push($features, $lot_feature);
+        };
+    };
+
+    return $features;
+};
+
+
 function generateValues($procurement_method, $number_of_lots){
     global $limited_procurement;
     if (!isset($number_of_lots) or $number_of_lots == 0){
@@ -176,7 +238,7 @@ function generateLots($lots_id, $values){
         $lot_number += 1;
         $lots_data = array(
                         "status"=>"active",
-                        "description"=>"Описание лота Лот " . $lot_number . str_replace('\n', ' ', $faker->text(200)),
+                        "description"=>"Описание лота Лот " . $lot_number . ' ' . str_replace('\n', ' ', $faker->text(200)),
                         "title"=>"Лот " . $lot_number,
                         "title_en"=>"Title of lot in English",
                         "description_en"=>"Description of lot in English",
@@ -289,7 +351,7 @@ function generateTenderJson($procurement_method, $number_of_lots, $number_of_ite
         foreach (range(0, $number_of_lots - 1) as $lot) {
             $lot_items = generateItems($number_of_items, $procurement_method, $classification);
             foreach (range(0, count($lot_items) - 1) as $item) {
-                $lot_items[$item]['description'] = "Предмет закупки " . ($item + 1) . " Лот" . ($lot + 1) . str_replace('\n', ' ', $faker->text(200));
+                $lot_items[$item]['description'] = "Предмет закупки " . ($item + 1) . " Лот " . ($lot + 1) . ' ' . str_replace('\n', ' ', $faker->text(200));
                 $lot_items[$item]['relatedLot'] = $list_of_lots_id[$lot];
                 array_push($items, $lot_items[$item]);
             };
@@ -298,10 +360,17 @@ function generateTenderJson($procurement_method, $number_of_lots, $number_of_ite
         $tender_data['data']['lots'] = $lots;
     };
 
+
+    if (!in_array($procurement_method, $limited_procurement)){
+        if ($if_features == 1) {
+            $tender_data['data']['features'] = generateFeatures($tender_data);
+                };
+    };
+
     return json_encode($tender_data);
 };
 
-$number_of_lots = 2;
+$number_of_lots = 1;
 $list_of_lots_id = generateIdForLot($number_of_lots);
 echo generateTenderJson('belowThreshol', $number_of_lots, 3, 1440,
 'active.qualification', $list_of_lots_id, 1, true);
