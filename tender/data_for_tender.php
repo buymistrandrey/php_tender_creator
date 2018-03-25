@@ -81,13 +81,12 @@ function generateFeatures($tender_data){
                 "description_en"=>"Description of feature for tender",
                 "featureOf"=>"tenderer"
     ));
-    $feature_number = -1;
-    foreach (range(0, 5) as $feature){
+    foreach (range(0, 5) as $feature_number){
         $feature_number += 1;
         $feature = array(
-                        "title_en"=>"Feature option " . ($feature_number + 1),
+                        "title_en"=>"Feature option " . ($feature_number),
                         "value"=>(float)('0.0' . $feature_number),
-                        "title"=>"Опция " . ($feature_number + 1) . ' ' . str_replace('\n', ' ', $faker->text(20))
+                        "title"=>"Опция " . ($feature_number) . ' ' . str_replace('\n', ' ', $faker->text(20))
         );
         array_push($features[0]['enum'], $feature );
     };
@@ -104,13 +103,12 @@ function generateFeatures($tender_data){
                             "relatedItem"=>$tender_data['data']['lots'][$lot]['id'],
                             "featureOf"=>"lot"
             );
-            $feature_number = -1;
-            foreach (range(0, 5) as $feature){
+            foreach (range(0, 5) as $feature_number){
                 $feature_number += 1;
                 $feature = array(
-                    "title_en"=>"Feature option " . ($feature_number + 1),
+                    "title_en"=>"Feature option " . ($feature_number),
                     "value"=>(float)('0.0' . $feature_number),
-                    "title"=>"Опция " . ($feature_number + 1) . " Лот " . ($lot + 1) . " " . str_replace('\n', ' ', $faker->text(20))
+                    "title"=>"Опция " . ($feature_number) . " Лот " . ($lot + 1) . " " . str_replace('\n', ' ', $faker->text(20))
                 );
                 array_push($lot_feature['enum'],$feature);
             };
@@ -190,7 +188,7 @@ function generateItems($number_of_items, $procurement_method, $classification){
     $unit = getUnit();
     $items = [];
     $item_number = 0;
-    foreach (range(0, $number_of_items - 1) as $item) {
+    foreach (range(0, $number_of_items - 1) as $item_number) {
         $item_number += 1;
         $item_data = array(
             "description" => "Предмет закупки " . $item_number . ' ' . str_replace('\n', ' ', $faker->text(200)),
