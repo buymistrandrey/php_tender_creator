@@ -1,7 +1,7 @@
 <?php
 include 'tender_additional_data.php';
-include 'plugins/faker/autoload.php';
-include 'tender/dk021.php';
+include ROOT_DIR . '/plugins/faker/autoload.php';
+include 'dk021.php';
 
 $faker = Faker\Factory::create('uk_UA');
 
