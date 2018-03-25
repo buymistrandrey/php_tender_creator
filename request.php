@@ -66,4 +66,8 @@ function sendRequestToCdb($headers, $host, $data)
 //echo $content;
 //echo $http_code . ' ';
 
+$number_of_lots = 0;
+$list_of_lots_id = generateIdForLot($number_of_lots);
+$data = generateTenderJson('esco', $number_of_lots, 3, 1440,
+    'active.qualification', $list_of_lots_id, 1, true);
 //echo sendRequestToCdb($headers, $host, $data);

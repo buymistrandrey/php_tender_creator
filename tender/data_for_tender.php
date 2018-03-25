@@ -1,6 +1,7 @@
 <?php
 include 'tender_additional_data.php';
-require_once '../plugins/faker/autoload.php';
+include 'plugins/faker/autoload.php';
+include 'tender/dk021.php';
 
 $faker = Faker\Factory::create('uk_UA');
 
@@ -22,7 +23,7 @@ function generateIdForItem(){
 
 function generateIdForLot($number_of_lots){
     $list_of_id = [];
-    foreach (range(0, count($list_of_id)) as $lot)
+    foreach (range(0, $number_of_lots - 1) as $lot)
         array_push($list_of_id, bin2hex(openssl_random_pseudo_bytes(16)));
     return $list_of_id;
 };
@@ -64,7 +65,7 @@ function tenderPeriod($accelerator, $procurement_method, $received_tender_status
 
 function generateValues($procurement_method, $number_of_lots){
     global $limited_procurement;
-    if (!isset($number_of_lots)){
+    if (!isset($number_of_lots) or $number_of_lots == 0){
     $number_of_lots = 1;
     };
     $generated_value = rand(100000, 1000000000);
@@ -124,15 +125,58 @@ function generateValues($procurement_method, $number_of_lots){
     return $value;
 };
 
+
+function generateItems($number_of_items, $procurement_method, $classification){
+    global $faker;
+    $unit = getUnit();
+    $items = [];
+    $item_number = 0;
+    foreach (range(0, $number_of_items - 1) as $item) {
+        $item_number += 1;
+        $item_data = array(
+            "description" => "Предмет закупки " . $item_number . ' ' . str_replace('\n', ' ', $faker->text(200)),
+            "classification" => array(
+                "scheme" => "ДК021",
+                "description" => $classification[key($classification)],
+                "id" => key($classification)
+            ),
+            "description_en" => "Description",
+            "deliveryAddress" => array(
+                "postalCode" => "00000",
+                "countryName" => "Україна",
+                "streetAddress" => "Улица",
+                "region" => "Дніпропетровська область",
+                "locality" => "Город"
+            ),
+            "deliveryDate" => array(
+                "startDate" => timeNow()->add(new DateInterval('P' . 7 . 'D'))->format('Y-m-d\TH:i:sO'),
+                "endDate" => timeNow()->add(new DateInterval('P' . 120 . 'D'))->format('Y-m-d\TH:i:sO'),
+            ),
+            "id" => generateIdForItem(),
+            "unit" => array(
+                "code" => $unit[0],
+                "name" => $unit[1]
+            ),
+            "quantity" => rand(1, 10000)
+        );
+
+        if ($procurement_method == 'esco') {
+            unset($item_data['deliveryDate'], $item_data['unit'], $item_data['quantity']);
+        };
+        array_push($items, $item_data);  //where add, what add
+    };
+    return $items;
+};
+
 function generateLots($lots_id, $values){
     global $faker;
     $lots = [];
     $lot_number = 0;
-    foreach (range(0, count($lots_id)) as $lot) {
+    foreach (range(0, count($lots_id) - 1) as $lot) {
         $lot_number += 1;
         $lots_data = array(
                         "status"=>"active",
-                        "description"=>"Описание лота Лот {} {}" . $lot_number . str_replace('\n', ' ', $faker->text(200)),
+                        "description"=>"Описание лота Лот " . $lot_number . str_replace('\n', ' ', $faker->text(200)),
                         "title"=>"Лот " . $lot_number,
                         "title_en"=>"Title of lot in English",
                         "description_en"=>"Description of lot in English",
@@ -140,8 +184,8 @@ function generateLots($lots_id, $values){
         );
         foreach($values as $key => $value){
             $lots_data[$key] = $values[$key];
-            array_push($lots, $lots_data);
         }
+        array_push($lots, $lots_data);
     }
 
     return $lots;
@@ -151,12 +195,12 @@ function generateTenderJson($procurement_method, $number_of_lots, $number_of_ite
 {
     global $limited_procurement;
     global $negotiation_procurement;
+    global $faker;
+    timeNow();
 
     $tender_data = json_decode('{
                     "data": {
                         "procurementMethodType": "",
-                        "description": "Примечания для тендера Тест !!!!!!!!!!!",
-                        "title": "TITLE!!!",
                         "status": "draft",
                         "title_en": "Title of tender in english",
                         "description_en": "",
@@ -176,12 +220,12 @@ function generateTenderJson($procurement_method, $number_of_lots, $number_of_ite
                                 "telephone": "+380002222222",
                                 "url": "http://www.site.site",
                                 "name_en": "Name of person in english",
-                                "name": "!!!!!!!!!!!!!!!!",
+                                "name": "Тарас Бульба",
                                 "email": "testik@gmail.test"
                             },
                             "identifier": {
                                 "scheme": "UA-EDR",
-                                "legalName_en": "!!!!!!!!!!!!!!!!!!!",
+                                "legalName_en": "Test organization TEST Ltd.",
                                 "id": "00000000",
                                 "legalName": "Тестовая организация ООО Тест"
                             },
@@ -190,9 +234,11 @@ function generateTenderJson($procurement_method, $number_of_lots, $number_of_ite
                     }
                 }', true);
 
+    $tender_data['data']['title'] = str_replace('\n', ' ', $faker->text(200));
+    $tender_data['data']['description'] = "Примечания для тендера Тест " . timeNow()->format('d-His');
+
     $tender_data['data']['procurementMethodType'] = $procurement_method;
     $tender_data['data']['procurementMethodDetails'] = 'quick, accelerator=' . $accelerator . '';
-
 
     //Select submission method details if isn't in limited procurement
     if (!in_array($procurement_method, $limited_procurement)){
@@ -221,7 +267,7 @@ function generateTenderJson($procurement_method, $number_of_lots, $number_of_ite
     $values = generateValues($procurement_method, $number_of_lots);
     foreach($values['tenderValues'] as $key => $value){
         $tender_data['data'][$key] = $values['tenderValues'][$key];
-    }
+    };
 
     //Add tender periods
     if (!in_array($procurement_method, $limited_procurement)){
@@ -229,10 +275,33 @@ function generateTenderJson($procurement_method, $number_of_lots, $number_of_ite
         foreach($tender_periods as $key => $value){
             $tender_data['data'][$key] = $tender_periods[$key];
         }
-        }
+    };
+
+    $classification = getClassification();
+
+    if ($number_of_lots == 0) {
+        $items = generateItems($number_of_items, $procurement_method, $classification);
+        $tender_data['data']['items'] = $items;
+    }
+    else {
+        $items = [];
+        $lots = generateLots($list_of_lots_id, $values['lotValues']);
+        foreach (range(0, $number_of_lots - 1) as $lot) {
+            $lot_items = generateItems($number_of_items, $procurement_method, $classification);
+            foreach (range(0, count($lot_items) - 1) as $item) {
+                $lot_items[$item]['description'] = "Предмет закупки " . ($item + 1) . " Лот" . ($lot + 1) . str_replace('\n', ' ', $faker->text(200));
+                $lot_items[$item]['relatedLot'] = $list_of_lots_id[$lot];
+                array_push($items, $lot_items[$item]);
+            };
+        };
+        $tender_data['data']['items'] = $items;
+        $tender_data['data']['lots'] = $lots;
+    };
 
     return json_encode($tender_data);
 };
 
-echo generateTenderJson('belowThreshol', 2, 3, 1440,
-'active.qualification', [1, 2], 1, true);
+$number_of_lots = 2;
+$list_of_lots_id = generateIdForLot($number_of_lots);
+echo generateTenderJson('belowThreshol', $number_of_lots, 3, 1440,
+'active.qualification', $list_of_lots_id, 1, true);
