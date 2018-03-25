@@ -65,22 +65,22 @@ function tenderPeriod($accelerator, $procurement_method, $received_tender_status
 
 function generateFeatures($tender_data){
     global  $faker;
-    if (in_array('lots', $tender_data['data'])) {
+    if (array_key_exists('lots', $tender_data['data'])) {
         $number_of_lots = count($tender_data['data']['lots']);
     }
     else {
         $number_of_lots = 0;
-            };
+    };
 
     $features = array(array(
                 "code"=>generateIdForItem(),
                 "description"=>"Описание неценового критерия для тендера",
                 "title"=>"Неценовой критерий для тендера",
-                "enum"=>array([]),
+                "enum"=>array(),
                 "title_en"=>"Feature of tender",
                 "description_en"=>"Description of feature for tender",
                 "featureOf"=>"tenderer"
-));
+    ));
     $feature_number = -1;
     foreach (range(0, 5) as $feature){
         $feature_number += 1;
@@ -92,16 +92,13 @@ function generateFeatures($tender_data){
         array_push($features[0]['enum'], $feature );
     };
 
-    if ($number_of_lots == 0) {
-        $features = $features;
-            }
-    else{
+    if ($number_of_lots != 0) {
         foreach (range(0, $number_of_lots - 1) as $lot){
             $lot_feature = array(
                             "code"=>generateIdForItem(),
                             "description"=>"Описание неценового критерия Лот " . ($lot + 1),
                             "title"=>"Неценовой критерий Лот ". ($lot + 1),
-                            "enum"=>[],
+                            "enum"=>array(),
                             "title_en"=>"Title of feature for lot " . ($lot + 1),
                             "description_en"=>"Description of feature for lot " . ($lot + 1),
                             "relatedItem"=>$tender_data['data']['lots'][$lot]['id'],
@@ -370,7 +367,7 @@ function generateTenderJson($procurement_method, $number_of_lots, $number_of_ite
     return json_encode($tender_data);
 };
 
-$number_of_lots = 1;
+$number_of_lots = 2;
 $list_of_lots_id = generateIdForLot($number_of_lots);
-echo generateTenderJson('belowThreshol', $number_of_lots, 3, 1440,
+echo generateTenderJson('reportin', $number_of_lots, 3, 1440,
 'active.qualification', $list_of_lots_id, 1, true);
